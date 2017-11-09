@@ -17,6 +17,7 @@ const Namespace = "github.com/devopsfaith/krakend-gologging"
 var (
 	// ErrEmptyValue is the error returned when there is no config under the namespace
 	ErrWrongConfig = fmt.Errorf("getting the extra config for the krakend-gologging module")
+	// LoggingPattern is the pattern to use for rendering the logs
 	LoggingPattern = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.6s}%{color:reset} %{message}`
 )
 
