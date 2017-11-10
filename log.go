@@ -12,7 +12,7 @@ import (
 )
 
 // Namespace is the key to look for extra configuration details
-const Namespace = "github.com/devopsfaith/krakend-gologging"
+const Namespace = "github_com/devopsfaith/krakend-gologging"
 
 var (
 	// ErrEmptyValue is the error returned when there is no config under the namespace
