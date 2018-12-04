@@ -2,6 +2,7 @@ package gologging
 
 import (
 	"bytes"
+	"io"
 	"regexp"
 	"testing"
 
@@ -41,8 +42,7 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestNewLogger_unknownLevel(t *testing.T) {
-	lw := LoggingWriter{ws: bytes.NewBuffer(make([]byte, 1024))}
-	_, err := NewLogger(newExtraConfig("UNKNOWN"), lw)
+	_, err := NewLogger(newExtraConfig("UNKNOWN"), bytes.NewBuffer(make([]byte, 1024)))
 	if err == nil {
 		t.Error("The factory didn't return the expected error")
 		return
@@ -63,10 +63,21 @@ func newExtraConfig(level string) map[string]interface{} {
 	}
 }
 
+type TestFormatWriter struct {
+	io.Writer
+}
+
 func logSomeStuff(level string) (string, error) {
 	buff := bytes.NewBuffer(make([]byte, 1024))
-	lw := LoggingWriter{ws: buff}
-	logger, err := NewLogger(newExtraConfig(level), lw)
+	SetFormatterSelector(func(w io.Writer) string {
+		switch w.(type) {
+		case TestFormatWriter:
+			return "customFormatter %{message}"
+		default:
+			return DefaultPattern
+		}
+	})
+	logger, err := NewLogger(newExtraConfig(level), TestFormatWriter{buff})
 	if err != nil {
 		return "", err
 	}

@@ -19,16 +19,17 @@ var (
 	// ErrEmptyValue is the error returned when there is no config under the namespace
 	ErrWrongConfig = fmt.Errorf("getting the extra config for the krakend-gologging module")
 	// DefaultPattern is the pattern to use for rendering the logs
-	DefaultPattern = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.6s}%{color:reset} %{message}`
+	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.6s}%{color:reset} %{message}`
+	defaultFormatterSelector = func(io.Writer) string { return DefaultPattern }
 )
 
-type LoggingWriter struct {
-	ws      io.Writer
-	pattern string
+// SetFormatterSelector sets the ddefaultFormatterSelector function
+func SetFormatterSelector(f func(io.Writer) string) {
+	defaultFormatterSelector = f
 }
 
 // NewLogger returns a krakend logger wrapping a gologging logger
-func NewLogger(cfg config.ExtraConfig, lw ...LoggingWriter) (logging.Logger, error) {
+func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) {
 	logConfig, ok := ConfigGetter(cfg).(Config)
 	if !ok {
 		return nil, ErrWrongConfig
@@ -37,7 +38,7 @@ func NewLogger(cfg config.ExtraConfig, lw ...LoggingWriter) (logging.Logger, err
 	loggr := gologging.MustGetLogger(module)
 
 	if logConfig.StdOut {
-		lw = append(lw, LoggingWriter{ws: os.Stdout})
+		ws = append(ws, os.Stdout)
 	}
 
 	if logConfig.Syslog {
@@ -47,16 +48,14 @@ func NewLogger(cfg config.ExtraConfig, lw ...LoggingWriter) (logging.Logger, err
 		if err != nil {
 			return nil, err
 		}
-		lw = append(lw, LoggingWriter{ws: w})
+		ws = append(ws, w)
 	}
 
 	backends := []gologging.Backend{}
-	for _, l := range lw {
-		backend := gologging.NewLogBackend(l.ws, logConfig.Prefix, 0)
-		if l.pattern == "" {
-			l.pattern = DefaultPattern
-		}
-		format := gologging.MustStringFormatter(l.pattern)
+	for _, w := range ws {
+		backend := gologging.NewLogBackend(w, logConfig.Prefix, 0)
+		pattern := defaultFormatterSelector(w)
+		format := gologging.MustStringFormatter(pattern)
 		backendLeveled := gologging.AddModuleLevel(gologging.NewBackendFormatter(backend, format))
 		logLevel, err := gologging.LogLevel(logConfig.Level)
 		if err != nil {
