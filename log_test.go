@@ -41,7 +41,8 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestNewLogger_unknownLevel(t *testing.T) {
-	_, err := NewLogger(newExtraConfig("UNKNOWN"), bytes.NewBuffer(make([]byte, 1024)))
+	lw := LoggingWriter{ws: bytes.NewBuffer(make([]byte, 1024))}
+	_, err := NewLogger(newExtraConfig("UNKNOWN"), lw)
 	if err == nil {
 		t.Error("The factory didn't return the expected error")
 		return
@@ -64,7 +65,8 @@ func newExtraConfig(level string) map[string]interface{} {
 
 func logSomeStuff(level string) (string, error) {
 	buff := bytes.NewBuffer(make([]byte, 1024))
-	logger, err := NewLogger(newExtraConfig(level), buff)
+	lw := LoggingWriter{ws: buff}
+	logger, err := NewLogger(newExtraConfig(level), lw)
 	if err != nil {
 		return "", err
 	}
