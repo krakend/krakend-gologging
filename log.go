@@ -4,6 +4,7 @@ package gologging
 import (
 	"fmt"
 	"io"
+	"log/syslog"
 	"os"
 
 	"github.com/devopsfaith/krakend/config"
@@ -17,9 +18,15 @@ const Namespace = "github_com/devopsfaith/krakend-gologging"
 var (
 	// ErrEmptyValue is the error returned when there is no config under the namespace
 	ErrWrongConfig = fmt.Errorf("getting the extra config for the krakend-gologging module")
-	// LoggingPattern is the pattern to use for rendering the logs
-	LoggingPattern = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.6s}%{color:reset} %{message}`
+	// DefaultPattern is the pattern to use for rendering the logs
+	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.6s}%{color:reset} %{message}`
+	defaultFormatterSelector = func(io.Writer) string { return DefaultPattern }
 )
+
+// SetFormatterSelector sets the ddefaultFormatterSelector function
+func SetFormatterSelector(f func(io.Writer) string) {
+	defaultFormatterSelector = f
+}
 
 // NewLogger returns a krakend logger wrapping a gologging logger
 func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) {
@@ -30,36 +37,32 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 	module := "KRAKEND"
 	loggr := gologging.MustGetLogger(module)
 
-	backends := []gologging.Backend{}
-	var b gologging.Backend
 	if logConfig.StdOut {
-		b = gologging.NewLogBackend(os.Stdout, logConfig.Prefix, 0)
-		backends = append(backends, b)
-	}
-
-	for _, w := range ws {
-		b = gologging.NewLogBackend(w, logConfig.Prefix, 0)
-		backends = append(backends, b)
+		ws = append(ws, os.Stdout)
 	}
 
 	if logConfig.Syslog {
 		var err error
-		b, err = gologging.NewSyslogBackend(logConfig.Prefix)
+		var w *syslog.Writer
+		w, err = syslog.New(syslog.LOG_CRIT, logConfig.Prefix)
 		if err != nil {
 			return nil, err
 		}
-		backends = append(backends, b)
+		ws = append(ws, w)
 	}
 
-	for i, b := range backends {
-		format := gologging.MustStringFormatter(LoggingPattern)
-		backendLeveled := gologging.AddModuleLevel(gologging.NewBackendFormatter(b, format))
+	backends := []gologging.Backend{}
+	for _, w := range ws {
+		backend := gologging.NewLogBackend(w, logConfig.Prefix, 0)
+		pattern := defaultFormatterSelector(w)
+		format := gologging.MustStringFormatter(pattern)
+		backendLeveled := gologging.AddModuleLevel(gologging.NewBackendFormatter(backend, format))
 		logLevel, err := gologging.LogLevel(logConfig.Level)
 		if err != nil {
 			return nil, err
 		}
 		backendLeveled.SetLevel(logLevel, module)
-		backends[i] = backendLeveled
+		backends = append(backends, backendLeveled)
 	}
 
 	gologging.SetBackend(backends...)

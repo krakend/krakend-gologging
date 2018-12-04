@@ -2,6 +2,7 @@ package gologging
 
 import (
 	"bytes"
+	"io"
 	"regexp"
 	"testing"
 
@@ -62,9 +63,21 @@ func newExtraConfig(level string) map[string]interface{} {
 	}
 }
 
+type TestFormatWriter struct {
+	io.Writer
+}
+
 func logSomeStuff(level string) (string, error) {
 	buff := bytes.NewBuffer(make([]byte, 1024))
-	logger, err := NewLogger(newExtraConfig(level), buff)
+	SetFormatterSelector(func(w io.Writer) string {
+		switch w.(type) {
+		case TestFormatWriter:
+			return "customFormatter %{message}"
+		default:
+			return DefaultPattern
+		}
+	})
+	logger, err := NewLogger(newExtraConfig(level), TestFormatWriter{buff})
 	if err != nil {
 		return "", err
 	}
