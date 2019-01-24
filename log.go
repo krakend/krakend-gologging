@@ -19,7 +19,7 @@ var (
 	// ErrEmptyValue is the error returned when there is no config under the namespace
 	ErrWrongConfig = fmt.Errorf("getting the extra config for the krakend-gologging module")
 	// DefaultPattern is the pattern to use for rendering the logs
-	logstashPattern          = `{"@timestamp":"%{time:200-01-02T15:04:05.000+00:00}", "@version": 1, "level": "%{level}", "message": "%{message}", "module": "%{module}"}`
+	LogstashPattern          = `{"@timestamp":"%{time:200-01-02T15:04:05.000+00:00}", "@version": 1, "level": "%{level}", "message": "%{message}", "module": "%{module}"}`
 	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.6s}%{color:reset} %{message}`
 	ActivePattern            = DefaultPattern
 	defaultFormatterSelector = func(io.Writer) string { return ActivePattern }
@@ -54,7 +54,12 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 	}
 
 	if logConfig.Format == "logstash" {
-		ActivePattern = logstashPattern
+		ActivePattern = LogstashPattern
+		logConfig.Prefix = ""
+	}
+
+	if logConfig.Format == "custom" {
+		ActivePattern = logConfig.CustomFormat
 		logConfig.Prefix = ""
 	}
 
@@ -102,16 +107,20 @@ func ConfigGetter(e config.ExtraConfig) interface{} {
 	if v, ok := tmp["format"]; ok {
 		cfg.Format = v.(string)
 	}
+	if v, ok := tmp["custom_format"]; ok {
+		cfg.CustomFormat = v.(string)
+	}
 	return cfg
 }
 
 // Config is the custom config struct containing the params for the logger
 type Config struct {
-	Level  string
-	StdOut bool
-	Syslog bool
-	Prefix string
-	Format string
+	Level        string
+	StdOut       bool
+	Syslog       bool
+	Prefix       string
+	Format       string
+	CustomFormat string
 }
 
 // Logger is a wrapper over a github.com/op/go-logging logger
