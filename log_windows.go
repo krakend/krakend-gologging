@@ -1,4 +1,4 @@
-// +build !windows, !plan9
+// +build windows, plan9
 
 //Package gologging provides a logger implementation based on the github.com/op/go-logging pkg
 package gologging
@@ -43,9 +43,6 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 
 	if logConfig.StdOut {
 		ws = append(ws, os.Stdout)
-	}
-
-	if logConfig.Syslog {
 	}
 
 	if logConfig.Format == "logstash" {
