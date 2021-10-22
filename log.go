@@ -20,7 +20,7 @@ var (
 	ErrWrongConfig = fmt.Errorf("getting the extra config for the krakend-gologging module")
 	// DefaultPattern is the pattern to use for rendering the logs
 	LogstashPattern          = `{"@timestamp":"%{time:2006-01-02T15:04:05.000+00:00}", "@version": 1, "level": "%{level}", "message": "%{message}", "module": "%{module}"}`
-	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level:.8s}%{color:reset} %{message}`
+	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level}%{color:reset} %{message}`
 	ActivePattern            = DefaultPattern
 	defaultFormatterSelector = func(io.Writer) string { return ActivePattern }
 )
