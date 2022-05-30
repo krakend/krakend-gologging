@@ -1,4 +1,4 @@
-module github.com/devopsfaith/krakend-gologging/v2
+module github.com/krakendio/krakend-gologging/v2
 
 go 1.17
 
