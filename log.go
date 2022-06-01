@@ -1,4 +1,4 @@
-//Package gologging provides a logger implementation based on the github.com/op/go-logging pkg
+// Package gologging provides a logger implementation based on the github.com/op/go-logging pkg
 package gologging
 
 import (
