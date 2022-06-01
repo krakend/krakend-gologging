@@ -6,7 +6,7 @@ An improved logger for the KrakenD framework
 
 Import the package
 
-	import "github.com/devopsfaith/krakend-gologging"
+	import "github.com/krakendio/krakend-gologging"
 
 After parsing the config file (here `cfg`), call the logger factory with the extra config of the system
 
