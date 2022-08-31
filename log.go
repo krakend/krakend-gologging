@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/syslog"
 	"os"
+	"strings"
 
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
@@ -23,11 +24,16 @@ var (
 	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level}%{color:reset} %{message}`
 	ActivePattern            = DefaultPattern
 	defaultFormatterSelector = func(io.Writer) string { return ActivePattern }
+	defaultSyslogFacility    = syslog.LOG_LOCAL3
 )
 
 // SetFormatterSelector sets the ddefaultFormatterSelector function
 func SetFormatterSelector(f func(io.Writer) string) {
 	defaultFormatterSelector = f
+}
+
+type syslogIoWriterWrapper struct {
+	io.Writer
 }
 
 // NewLogger returns a krakend logger wrapping a gologging logger
@@ -46,11 +52,20 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 	if logConfig.Syslog {
 		var err error
 		var w *syslog.Writer
-		w, err = syslog.New(syslog.LOG_CRIT, logConfig.Prefix)
+		w, err = syslog.New(syslog.LOG_CRIT|logConfig.SysLogFacility, logConfig.Prefix)
 		if err != nil {
 			return nil, err
 		}
-		ws = append(ws, w)
+		f := defaultFormatterSelector
+		defaultFormatterSelector = func(w io.Writer) string {
+			switch w.(type) {
+			case syslogIoWriterWrapper:
+				return "%{message}"
+			default:
+				return f(w)
+			}
+		}
+		ws = append(ws, syslogIoWriterWrapper{w})
 	}
 
 	if logConfig.Format == "logstash" {
@@ -98,6 +113,11 @@ func ConfigGetter(e config.ExtraConfig) interface{} {
 	if v, ok := tmp["syslog"]; ok {
 		cfg.Syslog = v.(bool)
 	}
+
+	cfg.SysLogFacility = defaultSyslogFacility
+	if v, ok := tmp["syslog_facility"]; ok {
+		cfg.SysLogFacility = parseSyslogFacility(v.(string))
+	}
 	if v, ok := tmp["level"]; ok {
 		cfg.Level = v.(string)
 	}
@@ -113,14 +133,38 @@ func ConfigGetter(e config.ExtraConfig) interface{} {
 	return cfg
 }
 
+func parseSyslogFacility(name string) syslog.Priority {
+	switch strings.ToLower(name) {
+	case "local0":
+		return syslog.LOG_LOCAL0
+	case "local1":
+		return syslog.LOG_LOCAL1
+	case "local2":
+		return syslog.LOG_LOCAL2
+	case "local3":
+		return syslog.LOG_LOCAL3
+	case "local4":
+		return syslog.LOG_LOCAL4
+	case "local5":
+		return syslog.LOG_LOCAL5
+	case "local6":
+		return syslog.LOG_LOCAL6
+	case "local7":
+		return syslog.LOG_LOCAL7
+	default:
+		return defaultSyslogFacility
+	}
+}
+
 // Config is the custom config struct containing the params for the logger
 type Config struct {
-	Level        string
-	StdOut       bool
-	Syslog       bool
-	Prefix       string
-	Format       string
-	CustomFormat string
+	Level          string
+	StdOut         bool
+	Syslog         bool
+	SysLogFacility syslog.Priority
+	Prefix         string
+	Format         string
+	CustomFormat   string
 }
 
 // Logger is a wrapper over a github.com/op/go-logging logger
