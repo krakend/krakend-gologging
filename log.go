@@ -1,4 +1,4 @@
-//Package gologging provides a logger implementation based on the github.com/op/go-logging pkg
+// Package gologging provides a logger implementation based on the github.com/op/go-logging pkg
 package gologging
 
 import (
@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/syslog"
 	"os"
+	"strings"
 
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
@@ -23,6 +24,8 @@ var (
 	DefaultPattern           = ` %{time:2006/01/02 - 15:04:05.000} %{color}▶ %{level}%{color:reset} %{message}`
 	ActivePattern            = DefaultPattern
 	defaultFormatterSelector = func(io.Writer) string { return ActivePattern }
+	defaultSyslogFacility    = syslog.LOG_LOCAL3
+	defaultSyslogSeverity    = syslog.LOG_CRIT
 )
 
 // SetFormatterSelector sets the ddefaultFormatterSelector function
@@ -46,11 +49,11 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 	if logConfig.Syslog {
 		var err error
 		var w *syslog.Writer
-		w, err = syslog.New(syslog.LOG_CRIT, logConfig.Prefix)
+		w, err = syslog.New(logConfig.SyslogSeverity|logConfig.SysLogFacility, logConfig.Prefix)
 		if err != nil {
 			return nil, err
 		}
-		ws = append(ws, w)
+		ws = append(ws, syslogIoWriterWrapper{w})
 	}
 
 	if logConfig.Format == "logstash" {
@@ -65,8 +68,16 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 
 	backends := []gologging.Backend{}
 	for _, w := range ws {
-		backend := gologging.NewLogBackend(w, logConfig.Prefix, 0)
-		pattern := defaultFormatterSelector(w)
+		var pattern string
+		var prefix string
+		switch w.(type) {
+		case syslogIoWriterWrapper:
+			pattern = "%{level} > %{message}"
+		default:
+			prefix = logConfig.Prefix
+			pattern = defaultFormatterSelector(w)
+		}
+		backend := gologging.NewLogBackend(w, prefix, 0)
 		format := gologging.MustStringFormatter(pattern)
 		backendLeveled := gologging.AddModuleLevel(gologging.NewBackendFormatter(backend, format))
 		logLevel, err := gologging.LogLevel(logConfig.Level)
@@ -98,29 +109,39 @@ func ConfigGetter(e config.ExtraConfig) interface{} {
 	if v, ok := tmp["syslog"]; ok {
 		cfg.Syslog = v.(bool)
 	}
-	if v, ok := tmp["level"]; ok {
-		cfg.Level = v.(string)
+
+	cfg.SysLogFacility = defaultSyslogFacility
+	if v, ok := tmp["syslog_facility"].(string); ok {
+		cfg.SysLogFacility = parseSyslogFacility(v)
 	}
-	if v, ok := tmp["prefix"]; ok {
-		cfg.Prefix = v.(string)
+
+	if v, ok := tmp["level"].(string); ok {
+		cfg.Level = v
 	}
-	if v, ok := tmp["format"]; ok {
-		cfg.Format = v.(string)
+	cfg.SyslogSeverity = parseSyslogSeverity(cfg.Level)
+
+	if v, ok := tmp["prefix"].(string); ok {
+		cfg.Prefix = v
 	}
-	if v, ok := tmp["custom_format"]; ok {
-		cfg.CustomFormat = v.(string)
+	if v, ok := tmp["format"].(string); ok {
+		cfg.Format = v
+	}
+	if v, ok := tmp["custom_format"].(string); ok {
+		cfg.CustomFormat = v
 	}
 	return cfg
 }
 
 // Config is the custom config struct containing the params for the logger
 type Config struct {
-	Level        string
-	StdOut       bool
-	Syslog       bool
-	Prefix       string
-	Format       string
-	CustomFormat string
+	Level          string
+	StdOut         bool
+	Syslog         bool
+	SysLogFacility syslog.Priority
+	SyslogSeverity syslog.Priority
+	Prefix         string
+	Format         string
+	CustomFormat   string
 }
 
 // Logger is a wrapper over a github.com/op/go-logging logger
@@ -156,4 +177,50 @@ func (l Logger) Critical(v ...interface{}) {
 // Fatal implements the logger interface
 func (l Logger) Fatal(v ...interface{}) {
 	l.logger.Fatal(v...)
+}
+
+type syslogIoWriterWrapper struct {
+	io.Writer
+}
+
+func parseSyslogFacility(name string) syslog.Priority {
+	switch strings.ToLower(name) {
+	case "local0":
+		return syslog.LOG_LOCAL0
+	case "local1":
+		return syslog.LOG_LOCAL1
+	case "local2":
+		return syslog.LOG_LOCAL2
+	case "local3":
+		return syslog.LOG_LOCAL3
+	case "local4":
+		return syslog.LOG_LOCAL4
+	case "local5":
+		return syslog.LOG_LOCAL5
+	case "local6":
+		return syslog.LOG_LOCAL6
+	case "local7":
+		return syslog.LOG_LOCAL7
+	default:
+		return defaultSyslogFacility
+	}
+}
+
+func parseSyslogSeverity(level string) syslog.Priority {
+	switch strings.ToLower(level) {
+	case "fatal":
+		return syslog.LOG_EMERG
+	case "critical":
+		return syslog.LOG_CRIT
+	case "error":
+		return syslog.LOG_ERR
+	case "warning":
+		return syslog.LOG_WARNING
+	case "info":
+		return syslog.LOG_INFO
+	case "debug":
+		return syslog.LOG_DEBUG
+	default:
+		return defaultSyslogSeverity
+	}
 }
