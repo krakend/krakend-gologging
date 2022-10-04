@@ -56,7 +56,7 @@ func TestNewLogger_logstashFormat(t *testing.T) {
 
 	logger.Critical(criticalMsg)
 
-	outputMsg := strings.Replace(buff.String(), "\x00", "", -1)
+	outputMsg := strings.ReplaceAll(buff.String(), "\x00", "")
 
 	if !isJson(outputMsg) || !strings.HasPrefix(outputMsg, "{\"@timestamp\":") {
 		t.Error("The output doesn't contain a logstash formatted log line")
@@ -76,7 +76,7 @@ func TestNewLogger_customFormat(t *testing.T) {
 
 	logger.Critical(criticalMsg)
 
-	outputMsg := strings.Replace(buff.String(), "\x00", "", -1)
+	outputMsg := strings.ReplaceAll(buff.String(), "\x00", "")
 
 	if "----> Critical msg\n" != outputMsg {
 		t.Error("The output doesn't contain the custom format")
