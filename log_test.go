@@ -78,7 +78,7 @@ func TestNewLogger_customFormat(t *testing.T) {
 
 	outputMsg := strings.ReplaceAll(buff.String(), "\x00", "")
 
-	if "----> Critical msg\n" != outputMsg {
+	if outputMsg != "----> Critical msg\n" {
 		t.Error("The output doesn't contain the custom format")
 	}
 }
