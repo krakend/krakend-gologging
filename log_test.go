@@ -95,7 +95,7 @@ func TestNewLogger_unknownLevel(t *testing.T) {
 	}
 }
 
-func newExtraConfig(level string, format string, customFormat string) map[string]interface{} {
+func newExtraConfig(level, format, customFormat string) map[string]interface{} {
 	return map[string]interface{}{
 		Namespace: map[string]interface{}{
 			"level":         level,
