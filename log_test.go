@@ -49,7 +49,6 @@ func TestNewLogger_logstashFormat(t *testing.T) {
 		return ActivePattern
 	})
 	logger, err := NewLogger(newExtraConfig("DEBUG", "logstash", ""), TestFormatWriter{buff})
-
 	if err != nil {
 		t.Error(err)
 		return
@@ -63,13 +62,13 @@ func TestNewLogger_logstashFormat(t *testing.T) {
 		t.Error("The output doesn't contain a logstash formatted log line")
 	}
 }
+
 func TestNewLogger_customFormat(t *testing.T) {
 	buff := bytes.NewBuffer(make([]byte, 1024))
 	SetFormatterSelector(func(w io.Writer) string {
 		return ActivePattern
 	})
 	logger, err := NewLogger(newExtraConfig("DEBUG", "custom", "----> %{message}"), TestFormatWriter{buff})
-
 	if err != nil {
 		t.Error(err)
 		return
@@ -95,7 +94,7 @@ func TestNewLogger_unknownLevel(t *testing.T) {
 	}
 }
 
-func newExtraConfig(level string, format string, customFormat string) map[string]interface{} {
+func newExtraConfig(level, format, customFormat string) map[string]interface{} {
 	return map[string]interface{}{
 		Namespace: map[string]interface{}{
 			"level":         level,
