@@ -151,26 +151,41 @@ type Logger struct {
 
 // Debug implements the logger interface
 func (l Logger) Debug(v ...interface{}) {
+	if !l.logger.IsEnabledFor(gologging.DEBUG) {
+		return
+	}
 	l.logger.Debug(v...)
 }
 
 // Info implements the logger interface
 func (l Logger) Info(v ...interface{}) {
+	if !l.logger.IsEnabledFor(gologging.INFO) {
+		return
+	}
 	l.logger.Info(v...)
 }
 
 // Warning implements the logger interface
 func (l Logger) Warning(v ...interface{}) {
+	if !l.logger.IsEnabledFor(gologging.WARNING) {
+		return
+	}
 	l.logger.Warning(v...)
 }
 
 // Error implements the logger interface
 func (l Logger) Error(v ...interface{}) {
+	if !l.logger.IsEnabledFor(gologging.ERROR) {
+		return
+	}
 	l.logger.Error(v...)
 }
 
 // Critical implements the logger interface
 func (l Logger) Critical(v ...interface{}) {
+	if !l.logger.IsEnabledFor(gologging.CRITICAL) {
+		return
+	}
 	l.logger.Critical(v...)
 }
 
