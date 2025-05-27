@@ -66,7 +66,7 @@ func NewLogger(cfg config.ExtraConfig, ws ...io.Writer) (logging.Logger, error) 
 		logConfig.Prefix = ""
 	}
 
-	backends := []gologging.Backend{}
+	var backends []gologging.Backend
 	for _, w := range ws {
 		var pattern string
 		var prefix string
