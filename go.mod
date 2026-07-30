@@ -1,4 +1,4 @@
-module github.com/krakend/krakend-gologging/3
+module github.com/krakend/krakend-gologging/v3
 
 go 1.25.0
 
