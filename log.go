@@ -8,13 +8,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/logging"
 	gologging "github.com/op/go-logging"
 )
 
 // Namespace is the key to look for extra configuration details
-const Namespace = "github_com/devopsfaith/krakend-gologging"
+const Namespace = "telemetry/logging"
 
 var (
 	// ErrEmptyValue is the error returned when there is no config under the namespace
