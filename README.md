@@ -16,12 +16,12 @@ And the logger is ready to be injected
 
 ## Configuration
 
-Add the `github_com/devopsfaith/krakend-gologging` section to the service extra config.
+Add the `telemetry/logging` section to the service extra config.
 
 Example:
 
 	"extra": {
-		"github_com/devopsfaith/krakend-gologging": {
+		"telemetry/logging": {
 			"level":  "INFO",
 			"prefix": "[KRAKEND]",
 			"syslog": false,
